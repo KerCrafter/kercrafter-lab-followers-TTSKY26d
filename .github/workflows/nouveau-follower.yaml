@@ -2,7 +2,7 @@
 # Une branche par follower : follower/<pseudo>. Le workflow y ajoute le pseudo, régénère la ROM,
 # lance les tests, ouvre la Pull Request et la fusionne aussitôt dans la branche principale.
 # La branche et la PR restent en ligne : le follower peut garder le lien et le partager.
-# Pour finir, un message dans le tchat Twitch mentionne le follower avec le lien de sa branche.
+# Pour finir, un message dans le tchat Twitch mentionne le follower avec le lien de sa Pull Request.
 name: Nouveau follower
 
 on:
@@ -58,6 +58,7 @@ jobs:
           python -m cocotb_tools.check_results results.xml
 
       - name: Branche du follower, Pull Request et fusion
+        id: pr
         if: steps.add.outputs.ajoute == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -92,6 +93,7 @@ jobs:
             URL="https://github.com/$REPO/tree/$BR"
           fi
           echo "### ❤ $PSEUDO gravé — $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "lien=$URL" >> "$GITHUB_OUTPUT"
 
       # Message dans le tchat Twitch (API Helix "Send Chat Message"), envoyé seulement une fois la branche en ligne.
       # Secrets du dépôt : TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, TWITCH_REFRESH_TOKEN (scope user:write:chat),
@@ -101,7 +103,7 @@ jobs:
         if: steps.add.outputs.ajoute == 'true'
         env:
           PSEUDO: ${{ steps.add.outputs.pseudo }}
-          REPO: ${{ github.repository }}
+          LIEN: ${{ steps.pr.outputs.lien }}
           CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
           REFRESH: ${{ secrets.TWITCH_REFRESH_TOKEN }}
@@ -114,7 +116,7 @@ jobs:
             --data-urlencode "client_id=$CLIENT_ID" --data-urlencode "client_secret=$CLIENT_SECRET" | jq -r .access_token)
           if [ -z "$ACCESS" ] || [ "$ACCESS" = "null" ]; then echo "::warning::Jeton Twitch refusé : régénère TWITCH_REFRESH_TOKEN"; exit 0; fi
           echo "::add-mask::$ACCESS"
-          MSG="@$PSEUDO un GRAND merci pour le follow ❤ Ton pseudo est maintenant gravé pour toujours dans notre puce Tiny Tapeout : https://github.com/$REPO/tree/follower/$PSEUDO"
+          MSG="@$PSEUDO un GRAND merci pour le follow ❤ Ton pseudo est maintenant gravé pour toujours dans notre puce Tiny Tapeout : $LIEN"
           jq -n --arg b "$BROADCASTER" --arg s "$SENDER" --arg m "$MSG" '{broadcaster_id:$b, sender_id:$s, message:$m}' > msg.json
           RES=$(curl -s -X POST https://api.twitch.tv/helix/chat/messages \
             -H "Authorization: Bearer $ACCESS" -H "Client-Id: $CLIENT_ID" -H "Content-Type: application/json" --data @msg.json)

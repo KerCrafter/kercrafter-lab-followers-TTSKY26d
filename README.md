@@ -16,7 +16,7 @@ sur un écran de remerciement VGA, comme un générique de fin.
    - régénère `src/credits_rom.v`, `src/font_rom.v` et l'aperçu `docs/apercu.png` ;
    - lance les tests cocotb ;
    - crée **une branche par follower** (`follower/<pseudo>`), ouvre la Pull Request et la fusionne aussitôt.
-3. Un message dans le tchat Twitch mentionne le follower, le remercie et lui donne le lien de sa branche.
+3. Un message dans le tchat Twitch mentionne le follower, le remercie et lui donne le lien de sa Pull Request.
 4. La branche et la PR restent en ligne : chaque follower peut garder son lien et le partager,
    par exemple `https://github.com/<dépôt>/tree/follower/PixelSoudeur`.
 
@@ -48,7 +48,7 @@ Si le flot GDS signale que la tuile est pleine, augmenter `tiles` dans `info.yam
 ## Message dans le tchat Twitch
 
 À la fin du workflow, un message est envoyé dans le tchat :
-« @Pseudo un GRAND merci pour le follow ❤ Ton pseudo est maintenant gravé pour toujours dans notre puce Tiny Tapeout : <lien de sa branche> »
+« @Pseudo un GRAND merci pour le follow ❤ Ton pseudo est maintenant gravé pour toujours dans notre puce Tiny Tapeout : <lien de sa Pull Request> »
 
 Secrets à créer (Settings > Secrets and variables > Actions) :
 
