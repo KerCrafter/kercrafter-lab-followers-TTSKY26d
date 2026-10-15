@@ -1,0 +1,113 @@
+# Déclenché par l'overlay OBS à chaque nouveau follow (API GitHub : workflow_dispatch).
+# Une branche par follower : follower/<pseudo>. Le workflow y ajoute le pseudo, régénère la ROM,
+# lance les tests, ouvre la Pull Request et la fusionne aussitôt dans la branche principale.
+# La branche et la PR restent en ligne : le follower peut garder le lien et le partager.
+# Pour finir, un message dans le tchat Twitch mentionne le follower avec le lien de sa branche.
+name: Nouveau follower
+
+on:
+  workflow_dispatch:
+    inputs:
+      pseudo:
+        description: Pseudo Twitch du follower
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# un seul à la fois : plusieurs follows rapprochés s'enchaînent sans se marcher dessus
+concurrency:
+  group: followers
+  cancel-in-progress: false
+
+jobs:
+  graver:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Identité du bot
+        run: |
+          git config user.name "KerCrafter Lab bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Le pseudo est passé par variable d'environnement et validé par le script (lettres, chiffres, _ ; 25 max) :
+      # un pseudo piégé ne peut rien exécuter.
+      - name: Graver le pseudo
+        id: add
+        env:
+          PSEUDO: ${{ inputs.pseudo }}
+        run: |
+          pip install --quiet pillow
+          python scripts/followers.py add "$PSEUDO" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Tests de la puce (cocotb)
+        if: steps.add.outputs.ajoute == 'true'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq iverilog
+          pip install --quiet -r test/requirements.txt
+          cd test && make clean && make
+          python -m cocotb_tools.check_results results.xml
+
+      - name: Branche du follower, Pull Request et fusion
+        if: steps.add.outputs.ajoute == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PSEUDO: ${{ steps.add.outputs.pseudo }}
+          TOTAL: ${{ steps.add.outputs.total }}
+          BASE: ${{ github.event.repository.default_branch }}
+          REPO: ${{ github.repository }}
+        run: |
+          BR="follower/$PSEUDO"
+          git checkout -b "$BR"
+          git add followers.txt src/credits_rom.v src/font_rom.v docs/apercu.png
+          git commit -m "Grave $PSEUDO dans la puce ❤"
+          git push --force origin "$BR"
+          # PR déjà ouverte (relance après un échec) : on la réutilise
+          URL=$(gh pr list --head "$BR" --state open --json url -q '.[0].url')
+          [ -n "$URL" ] || URL=$(gh pr create --head "$BR" --base "$BASE" \
+            --title "❤ $PSEUDO est gravé dans la puce" \
+            --body "Merci **$PSEUDO** ! Tu es le follower n°$TOTAL de KerCrafter Lab, et ton pseudo est maintenant gravé dans notre puce Tiny Tapeout.
+
+          ![Écran de remerciement](https://github.com/$REPO/blob/$BR/docs/apercu.png?raw=true)
+
+          Ta branche : https://github.com/$REPO/tree/$BR")
+          echo "Pull Request : $URL"
+          # fusion immédiate (les follows sont traités un par un : pas de conflit entre branches)
+          gh pr merge "$URL" --merge
+          echo "### ❤ $PSEUDO gravé — $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      # Message dans le tchat Twitch (API Helix "Send Chat Message"), envoyé seulement une fois la branche en ligne.
+      # Secrets du dépôt : TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET, TWITCH_REFRESH_TOKEN (scope user:write:chat),
+      # TWITCH_BROADCASTER_ID (ta chaîne) et TWITCH_SENDER_ID (le compte qui écrit : toi ou ton bot).
+      # Sans ces secrets, l'étape est simplement sautée.
+      - name: Message dans le tchat Twitch
+        if: steps.add.outputs.ajoute == 'true'
+        env:
+          PSEUDO: ${{ steps.add.outputs.pseudo }}
+          REPO: ${{ github.repository }}
+          CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          REFRESH: ${{ secrets.TWITCH_REFRESH_TOKEN }}
+          BROADCASTER: ${{ secrets.TWITCH_BROADCASTER_ID }}
+          SENDER: ${{ secrets.TWITCH_SENDER_ID }}
+        run: |
+          if [ -z "$CLIENT_ID" ] || [ -z "$REFRESH" ]; then echo "Secrets Twitch absents : message non envoyé"; exit 0; fi
+          ACCESS=$(curl -sf -X POST https://id.twitch.tv/oauth2/token \
+            --data-urlencode grant_type=refresh_token --data-urlencode "refresh_token=$REFRESH" \
+            --data-urlencode "client_id=$CLIENT_ID" --data-urlencode "client_secret=$CLIENT_SECRET" | jq -r .access_token)
+          if [ -z "$ACCESS" ] || [ "$ACCESS" = "null" ]; then echo "::warning::Jeton Twitch refusé : régénère TWITCH_REFRESH_TOKEN"; exit 0; fi
+          echo "::add-mask::$ACCESS"
+          MSG="@$PSEUDO un GRAND merci pour le follow ❤ Ton pseudo est maintenant gravé pour toujours dans notre puce Tiny Tapeout : https://github.com/$REPO/tree/follower/$PSEUDO"
+          jq -n --arg b "$BROADCASTER" --arg s "$SENDER" --arg m "$MSG" '{broadcaster_id:$b, sender_id:$s, message:$m}' > msg.json
+          RES=$(curl -s -X POST https://api.twitch.tv/helix/chat/messages \
+            -H "Authorization: Bearer $ACCESS" -H "Client-Id: $CLIENT_ID" -H "Content-Type: application/json" --data @msg.json)
+          echo "$RES" | jq -e '.data[0].is_sent == true' > /dev/null && echo "Message envoyé dans le tchat" || echo "::warning::Message Twitch non envoyé : $RES"
