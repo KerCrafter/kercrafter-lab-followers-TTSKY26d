@@ -71,18 +71,26 @@ jobs:
           git add followers.txt src/credits_rom.v src/font_rom.v docs/apercu.png
           git commit -m "Grave $PSEUDO dans la puce ❤"
           git push --force origin "$BR"
-          # PR déjà ouverte (relance après un échec) : on la réutilise
-          URL=$(gh pr list --head "$BR" --state open --json url -q '.[0].url')
-          [ -n "$URL" ] || URL=$(gh pr create --head "$BR" --base "$BASE" \
-            --title "❤ $PSEUDO est gravé dans la puce" \
-            --body "Merci **$PSEUDO** ! Tu es le follower n°$TOTAL de KerCrafter Lab, et ton pseudo est maintenant gravé dans notre puce Tiny Tapeout.
+          CORPS="Merci **$PSEUDO** ! Tu es le follower n°$TOTAL de KerCrafter Lab, et ton pseudo est maintenant gravé dans notre puce Tiny Tapeout.
 
           ![Écran de remerciement](https://github.com/$REPO/blob/$BR/docs/apercu.png?raw=true)
 
-          Ta branche : https://github.com/$REPO/tree/$BR")
-          echo "Pull Request : $URL"
-          # fusion immédiate (les follows sont traités un par un : pas de conflit entre branches)
-          gh pr merge "$URL" --merge
+          Ta branche : https://github.com/$REPO/tree/$BR"
+          # PR déjà ouverte (relance après un échec) : on la réutilise
+          URL=$(gh pr list --head "$BR" --state open --json url -q '.[0].url' 2>/dev/null || true)
+          if [ -z "$URL" ]; then
+            URL=$(gh pr create --head "$BR" --base "$BASE" --title "❤ $PSEUDO est gravé dans la puce" --body "$CORPS" 2>pr_err.txt) || URL=""
+          fi
+          if [ -n "$URL" ] && gh pr merge "$URL" --merge; then
+            echo "Pull Request fusionnée : $URL"
+          else
+            # Sans le droit de créer des PR (Settings > Actions > General), on fusionne quand même :
+            # la branche part de main et les follows sont traités un par un, donc avance rapide.
+            cat pr_err.txt 2>/dev/null || true
+            echo "::warning::Pull Request impossible (autorise « Allow GitHub Actions to create and approve pull requests » dans Settings > Actions > General). Fusion directe dans $BASE."
+            git push origin "HEAD:$BASE"
+            URL="https://github.com/$REPO/tree/$BR"
+          fi
           echo "### ❤ $PSEUDO gravé — $URL" >> "$GITHUB_STEP_SUMMARY"
 
       # Message dans le tchat Twitch (API Helix "Send Chat Message"), envoyé seulement une fois la branche en ligne.
