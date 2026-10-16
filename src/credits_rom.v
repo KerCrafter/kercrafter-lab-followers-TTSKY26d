@@ -1,5 +1,5 @@
 // GENERE par scripts/followers.py a partir de followers.txt -- ne pas modifier a la main
-// 6 followers, 32 lignes de texte
+// 7 followers, 32 lignes de texte
 `default_nettype none
 module credits_rom (
   input  wire [6:0] ligne_brute,
@@ -96,37 +96,47 @@ module credits_rom (
       {5'd9, 6'd22}: code = 6'd5;   // E
       {5'd9, 6'd23}: code = 6'd18;   // R
       {5'd9, 6'd24}: code = 6'd31;   // 4
-      {5'd11, 6'd10}: code = 6'd7;   // G
-      {5'd11, 6'd11}: code = 6'd18;   // R
-      {5'd11, 6'd12}: code = 6'd1;   // A
-      {5'd11, 6'd13}: code = 6'd22;   // V
-      {5'd11, 6'd14}: code = 6'd5;   // E
-      {5'd11, 6'd15}: code = 6'd19;   // S
-      {5'd11, 6'd17}: code = 6'd16;   // P
-      {5'd11, 6'd18}: code = 6'd15;   // O
-      {5'd11, 6'd19}: code = 6'd21;   // U
-      {5'd11, 6'd20}: code = 6'd18;   // R
-      {5'd11, 6'd22}: code = 6'd20;   // T
-      {5'd11, 6'd23}: code = 6'd15;   // O
-      {5'd11, 6'd24}: code = 6'd21;   // U
-      {5'd11, 6'd25}: code = 6'd10;   // J
-      {5'd11, 6'd26}: code = 6'd15;   // O
-      {5'd11, 6'd27}: code = 6'd21;   // U
-      {5'd11, 6'd28}: code = 6'd18;   // R
-      {5'd11, 6'd29}: code = 6'd19;   // S
-      {5'd12, 6'd13}: code = 6'd11;   // K
+      {5'd10, 6'd15}: code = 6'd11;   // K
+      {5'd10, 6'd16}: code = 6'd5;   // E
+      {5'd10, 6'd17}: code = 6'd18;   // R
+      {5'd10, 6'd18}: code = 6'd20;   // T
+      {5'd10, 6'd19}: code = 6'd5;   // E
+      {5'd10, 6'd20}: code = 6'd19;   // S
+      {5'd10, 6'd21}: code = 6'd20;   // T
+      {5'd10, 6'd22}: code = 6'd5;   // E
+      {5'd10, 6'd23}: code = 6'd18;   // R
+      {5'd10, 6'd24}: code = 6'd32;   // 5
+      {5'd12, 6'd10}: code = 6'd7;   // G
+      {5'd12, 6'd11}: code = 6'd18;   // R
+      {5'd12, 6'd12}: code = 6'd1;   // A
+      {5'd12, 6'd13}: code = 6'd22;   // V
       {5'd12, 6'd14}: code = 6'd5;   // E
-      {5'd12, 6'd15}: code = 6'd18;   // R
-      {5'd12, 6'd16}: code = 6'd3;   // C
-      {5'd12, 6'd17}: code = 6'd18;   // R
-      {5'd12, 6'd18}: code = 6'd1;   // A
-      {5'd12, 6'd19}: code = 6'd6;   // F
-      {5'd12, 6'd20}: code = 6'd20;   // T
-      {5'd12, 6'd21}: code = 6'd5;   // E
-      {5'd12, 6'd22}: code = 6'd18;   // R
-      {5'd12, 6'd24}: code = 6'd12;   // L
-      {5'd12, 6'd25}: code = 6'd1;   // A
-      {5'd12, 6'd26}: code = 6'd2;   // B
+      {5'd12, 6'd15}: code = 6'd19;   // S
+      {5'd12, 6'd17}: code = 6'd16;   // P
+      {5'd12, 6'd18}: code = 6'd15;   // O
+      {5'd12, 6'd19}: code = 6'd21;   // U
+      {5'd12, 6'd20}: code = 6'd18;   // R
+      {5'd12, 6'd22}: code = 6'd20;   // T
+      {5'd12, 6'd23}: code = 6'd15;   // O
+      {5'd12, 6'd24}: code = 6'd21;   // U
+      {5'd12, 6'd25}: code = 6'd10;   // J
+      {5'd12, 6'd26}: code = 6'd15;   // O
+      {5'd12, 6'd27}: code = 6'd21;   // U
+      {5'd12, 6'd28}: code = 6'd18;   // R
+      {5'd12, 6'd29}: code = 6'd19;   // S
+      {5'd13, 6'd13}: code = 6'd11;   // K
+      {5'd13, 6'd14}: code = 6'd5;   // E
+      {5'd13, 6'd15}: code = 6'd18;   // R
+      {5'd13, 6'd16}: code = 6'd3;   // C
+      {5'd13, 6'd17}: code = 6'd18;   // R
+      {5'd13, 6'd18}: code = 6'd1;   // A
+      {5'd13, 6'd19}: code = 6'd6;   // F
+      {5'd13, 6'd20}: code = 6'd20;   // T
+      {5'd13, 6'd21}: code = 6'd5;   // E
+      {5'd13, 6'd22}: code = 6'd18;   // R
+      {5'd13, 6'd24}: code = 6'd12;   // L
+      {5'd13, 6'd25}: code = 6'd1;   // A
+      {5'd13, 6'd26}: code = 6'd2;   // B
       default: code = 6'd0;
     endcase
     case (ligne)
@@ -138,8 +148,9 @@ module credits_rom (
       5'd7: couleur = 6'b111111;   // KERTESTER2
       5'd8: couleur = 6'b111111;   // KERTESTER
       5'd9: couleur = 6'b111111;   // KERTESTER4
-      5'd11: couleur = 6'b011011;   // GRAVES POUR TOUJOURS
-      5'd12: couleur = 6'b111100;   // KERCRAFTER LAB
+      5'd10: couleur = 6'b111111;   // KERTESTER5
+      5'd12: couleur = 6'b011011;   // GRAVES POUR TOUJOURS
+      5'd13: couleur = 6'b111100;   // KERCRAFTER LAB
       default: couleur = 6'b111111;
     endcase
   end
